@@ -97,14 +97,20 @@
                 "Standard_RAGRS",
                 "Premium_LRS"
             ]
+        },
+        "emailAlertRole": {
+            "type": "string",
+            "defaultValue": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
+            "metadata": {
+                "description": "See https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles for a list of valid values."
+            }
         }
     },
     "variables": {
         "webSiteName": "[concat(parameters('appName'), '-', parameters('environment'), '-', parameters('locationShort'), '-web')]",
         "sqlserverName": "[concat(parameters('appName'), '-', parameters('environment'), '-', parameters('locationShort'), '-sql')]",
         "hostingPlanName": "[concat(parameters('appName'), '-', parameters('locationShort'), '-web')]",
-        "storageAccountName": "[concat(parameters('appName'), 'data001')]",
-        "email-alert-role": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+        "storageAccountName": "[concat(parameters('appName'), 'data001')]"
     },
     "resources": [
         {
@@ -299,7 +305,7 @@
                 "armRoleReceivers": [
                     {
                         "name": "email-alert",
-                        "roleId": "[variables('email-alert-role')]",
+                        "roleId": "[parameters('emailAlertRole')]",
                         "useCommonAlertSchema": true
                     }
                 ]
@@ -311,7 +317,8 @@
             "name": "[concat('ServerErrors ', variables('webSiteName'))]",
             "location": "global",
             "dependsOn": [
-                "[resourceId('Microsoft.Web/sites', variables('webSiteName'))]"
+                "[resourceId('Microsoft.Web/sites', variables('webSiteName'))]",
+                "[resourceId('microsoft.insights/actionGroups', 'email-alert')]"
             ],
             "properties": {
                 "description": "[concat(variables('webSiteName'), ' has some server errors, status code 5xx.')]",
@@ -351,7 +358,8 @@
             "name": "[concat('ForbiddenRequests ', variables('webSiteName'))]",
             "location": "global",
             "dependsOn": [
-                "[resourceId('Microsoft.Web/sites', variables('webSiteName'))]"
+                "[resourceId('Microsoft.Web/sites', variables('webSiteName'))]",
+                "[resourceId('microsoft.insights/actionGroups', 'email-alert')]"
             ],
             "properties": {
                 "description": "[concat(variables('webSiteName'), ' has some requests that are forbidden, status code 403.')]",
@@ -411,7 +419,7 @@
                             "metricNamespace": "Microsoft.Web/serverfarms",
                             "metricName": "CpuPercentage",
                             "operator": "GreaterThan",
-                            "timeAggregation": "Total",
+                            "timeAggregation": "Average",
                             "criterionType": "StaticThresholdCriterion"
                         }
                     ],
@@ -452,7 +460,7 @@
                             "metricNamespace": "Microsoft.Web/serverfarms",
                             "metricName": "HttpQueueLength",
                             "operator": "GreaterThan",
-                            "timeAggregation": "Total",
+                            "timeAggregation": "Average",
                             "criterionType": "StaticThresholdCriterion"
                         }
                     ],
